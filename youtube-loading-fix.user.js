@@ -93,6 +93,117 @@
 
                 return true;
             }
+
+            function attemptFix() {
+                if (isFixing || retryCount >= CONFIG.MAX_RETRIES) {
+                    log('Fix skipped:', {isFixing, retryCount});
+                    return;
+                }
+
+                isFixing = true;
+                retryCount++;
+                log(`Fix attempt ${retryCount}/${CONFIG.MAX_RETRIES}`);
+
+                const fixes = [fixQualityChange, fixPlayerReset, fixStreamRefresh];
+                let fixed = false;
+
+                for (const fix of fixes) {
+                    try {
+                        if (fix()) {fixed = true; break;}
+                    } catch (e) {log ('fix error:', e);}
+                }
+
+                showNotification (fixed ? 'The loading issue has been fixed!' :
+                    'We were unable to fix the problem. Please refresh the page (F5)'
+                );
+
+                setTimeout(() => {
+                    isFixing = false;
+                    if (!isStruckLoading()) retryCount = 0;
+                }, 15000);
+            }
+        }
+
+        function showNotification(message) {
+            const existing = document.getElementById('yt-loading-fix-toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.id - 'yt-loading-fix-toast';
+            toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff0000;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: Roboto, Arial, sans-serif;
+            font-size: 14px;
+            z-index: 99999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+
+            const style = document.createElement('style');
+            style.textContent = `
+            @keyframes slideIn {
+            from {transform: translateX(100%); opacity: 0;}
+            to {transform: translateX(0); opacity: 1;}
+            }
+        
+        `;
+        document.head.appendChild(style);
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+        }
+
+        function startMonitoring() {
+            log('Monitoring started');
+
+            if (!location.pathname.startsWith('/watch')) {
+                log('Not a video page');
+                return;
+            }
+
+            let lastUrl = location.href;
+            new MutationObserver(() => {
+                if (location.href !== lastUrl) {
+                    lastUrl = location.href;
+                    retryCount = 0;
+                    lastTime = 0;
+                    isFixing = false;
+                    log('Navigation detected, reset');
+                }
+            }).observe(document, {subtree: true, childList: true });
+
+            setInterval(() => {
+                if (isStruckLoading()) {
+                    if (!stuckTimer) {
+                        stuckTimer = setTimeout(() => {
+                            attemptFix();
+                            stuckTimer = null;
+                        }, CONFIG.SPINNER_TIMEOUT);
+                    }
+                } else {
+                    if (stuckTimer) {
+                        clearTimeout(stuckTimer);
+                        stuckTimer = null;
+                        log('Stuck cleared');
+                    }
+                    if (retryCount > 0 && !isFixing) retryCount = 0;
+                }
+            }, CONFIG.CHECK_INTERVAL);
+        }
+
+        function addManualFixButton() {
+            const observer = new MutationObserver(() => {
+                const rightControls = document.querySelector('.ytp-right-controls');
+                if (rightControls && !document.getElementById('yt-fix-button')) {
+                    const btn = document.createElement('button');
+                } 
+            })
         }
     }
 })
