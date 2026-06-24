@@ -1,3 +1,18 @@
+// ==UserScript==
+// @name         YouTube Infinite Loading Fix
+// @namespace    https://github.com/4ncode/youtube-loading-fix
+// @version      1.0.0
+// @description  Fixes the issue of YouTube loading indefinitely and the timer resetting
+// @author       Aleksander
+// @match        https://www.youtube.com/*
+// @match        https://youtube.com/*
+// @grant        none
+// @run-at       document-start
+// @license      MIT
+// @supportURL   https://github.com/4ncode/youtube-loading-fix/issues
+// @homepageURL  https://github.com/4ncode/youtube-loading-fix
+// ==/UserScript==
+
 (function() {
     'use strict';
 
@@ -202,8 +217,39 @@
                 const rightControls = document.querySelector('.ytp-right-controls');
                 if (rightControls && !document.getElementById('yt-fix-button')) {
                     const btn = document.createElement('button');
-                } 
-            })
+                    btn.id = 'yt-fix-button';
+                    btn.innerHTML = '👽';
+                    btn.title = 'Fix the loading issue';
+                    btn.style.cssText = `
+                    background: rgba(255,0,0,0.8);
+                    color: white;
+                    border: none;
+                    padding: 4px 8px;
+                    margin-left: 8px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    line-height: 1;
+                `}
+                btn.onclick = () => {retryCount = 0; attemptFix();};
+                
+                if (rightControls.firstChild) {
+                    rightControls.insertBefore(btn, rightControls.firstChild);
+                } else {
+                    rightControls.appendChild(btn);
+                }
+            });
+            observer.observe(document.body, {childList: true, subtree: true});
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                startMonitoring();
+                addManualFixButton();
+            });
+        } else {
+            startMonitoring();
+            addManualFixButton();
         }
     }
-})
+})();
