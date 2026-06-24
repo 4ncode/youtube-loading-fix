@@ -3,7 +3,7 @@
 // @namespace    https://github.com/4ncode/youtube-loading-fix
 // @version      1.0.0
 // @description  Fixes the issue of YouTube loading indefinitely and the timer resetting
-// @author       Aleksander
+// @author       4ncode
 // @match        https://www.youtube.com/*
 // @match        https://youtube.com/*
 // @grant        none
